@@ -210,8 +210,7 @@ public class Mailboxes {
                     }
                 });
     }
-
-
+    
     @Listener
     public void onBlockInteract(InteractBlockEvent.Secondary event, @Root Player player, @Getter("getTargetBlock") BlockSnapshot blockSnapshot) {
 
