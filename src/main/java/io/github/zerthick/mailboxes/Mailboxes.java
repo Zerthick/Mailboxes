@@ -69,7 +69,7 @@ import java.util.concurrent.ExecutionException;
 @Plugin(
         id = "mailboxes",
         name = "Mailboxes",
-        version = "0.1.0",
+        version = "0.2.0",
         description = "A Simple Minecraft Mailboxes Plugin",
         authors = {
                 "Zerthick"
