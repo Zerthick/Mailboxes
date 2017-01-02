@@ -4,6 +4,8 @@ A Simple Minecraft Mailboxes Plugin
 
 Mailboxes allows players to send mail to each other at player-created mailboxes.To begin place a sign on a chest with `[mailbox]` on the second line. Assuming you have the `mailboxes.create` permission, the mailbox will be created! To prepare an item to send in the mail hold the item in your main hand and execute `/mailboxes send package <User>` where `User` is the player you want to send the item to. The item will then be wrapped in a package! To mail you package, right-click with it on any mailbox, to check your mail, right-click on any mailbox while not holding a package. To open a sent package, simply hold it in your hand and right-click!
 
+*Note:* Once a mailbox has been created the sign is optional, feel free to destroy it!
+
 ## Commands
 ```
 /mb - Displays version information about the Mailboxes Plugin. (Aliases: mb, mailboxes)
