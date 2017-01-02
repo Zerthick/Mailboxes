@@ -7,11 +7,12 @@ Mailboxes allows players to send mail to each other at player-created mailboxes.
 *Note:* Once a mailbox has been created the sign is optional, feel free to destroy it!
 
 ## Commands
-`/mb` - Displays version information about the Mailboxes Plugin. (Aliases: mb, mailboxes)  
+`/mb` - Displays version information about the Mailboxes Plugin. (Aliases: mb, mailboxes, mail)  
 `/mb send` - Prepares the item held in your main hand to send as various types of items in the mail. (Aliases: send, wrap)  
 `/mb send package <User> [Note]` - Wraps the item currently held in your main hand into a package addressed to `User` with an optional `Note` attached (Notes support format codes!). (Aliases: package)
 
 ## Permissions
+`mailboxes.use`
 `mailboxes.create`  
 `mailboxes.destroy`  
 `mailboxes.command.info`  
