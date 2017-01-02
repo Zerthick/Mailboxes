@@ -48,7 +48,7 @@ public class CommandRegister {
                 .child(send, "send", "wrap")
                 .build();
 
-        Sponge.getCommandManager().register(plugin, mailbox, "mailboxes", "mb");
+        Sponge.getCommandManager().register(plugin, mailbox, "mailboxes", "mb", "mail");
     }
 
 }
