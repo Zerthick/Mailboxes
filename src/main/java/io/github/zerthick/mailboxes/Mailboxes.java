@@ -218,50 +218,56 @@ public class Mailboxes {
             blockSnapshot.getLocation().ifPresent(location -> {
                 if (mailboxLocationManager.isLocation(location.getExtent().getUniqueId(), location.getBlockPosition())) {
 
-                    Optional<ItemStack> itemStackOptional = player.getItemInHand(event.getHandType());
+                    //Check that the player has permission to use mailboxes
+                    if (player.hasPermission("mailboxes.use")) {
 
-                    //If the player is holding a mail item in their hand
-                    if (itemStackOptional.isPresent() && isMailItem(itemStackOptional.get())) {
+                        Optional<ItemStack> itemStackOptional = player.getItemInHand(event.getHandType());
 
-                        ItemStack itemStack = buildSentMailItemStack(itemStackOptional.get());
-                        UUID receiver = itemStack.get(MailItemKeys.MAIL_ITEM_RECEIVER).get();
+                        //If the player is holding a mail item in their hand
+                        if (itemStackOptional.isPresent() && isMailItem(itemStackOptional.get())) {
 
-                        InventoryTransactionResult result;
+                            ItemStack itemStack = buildSentMailItemStack(itemStackOptional.get());
+                            UUID receiver = itemStack.get(MailItemKeys.MAIL_ITEM_RECEIVER).get();
 
-                        Optional<MailboxInventory> inventory = mailboxInventoryManager.getInventory(receiver);
-                        if (inventory.isPresent()) {
-                            //Player is online, we can add the mail directly
-                            result = inventory.get().addMail(itemStack);
-                        } else {
-                            //Player is offline load the mail inventory, offer the item, and then save it.
-                            MailboxInventory offlinePlayerInventory = ConfigManager.loadMailboxInventory(receiver, this);
-                            result = offlinePlayerInventory.addMail(itemStack);
+                            InventoryTransactionResult result;
 
-                            if (result.getType() == InventoryTransactionResult.Type.SUCCESS) {
-                                ConfigManager.saveMailboxInventory(receiver, offlinePlayerInventory, this);
+                            Optional<MailboxInventory> inventory = mailboxInventoryManager.getInventory(receiver);
+                            if (inventory.isPresent()) {
+                                //Player is online, we can add the mail directly
+                                result = inventory.get().addMail(itemStack);
+                            } else {
+                                //Player is offline load the mail inventory, offer the item, and then save it.
+                                MailboxInventory offlinePlayerInventory = ConfigManager.loadMailboxInventory(receiver, this);
+                                result = offlinePlayerInventory.addMail(itemStack);
+
+                                if (result.getType() == InventoryTransactionResult.Type.SUCCESS) {
+                                    ConfigManager.saveMailboxInventory(receiver, offlinePlayerInventory, this);
+                                }
                             }
+
+                            //Send message to the sender based on the result of the inventory transaciton
+                            if (result.getType() == InventoryTransactionResult.Type.SUCCESS) {
+                                player.setItemInHand(event.getHandType(), null);
+                                player.sendMessage(Text.of(TextColors.GOLD, "Mail Sent!"));
+
+                                //If the receiver is online, send them a message they they got mail
+                                Sponge.getServer().getPlayer(receiver).ifPresent(p -> p.sendMessage(Text.of(TextColors.GOLD, "You have mail from ",
+                                        TextColors.WHITE, player.getName())));
+                            } else if (result.getType() == InventoryTransactionResult.Type.FAILURE) {
+                                player.sendMessage(Text.of(TextColors.RED, "Unable to send mail: Receiver Mailbox Full!"));
+                            } else {
+                                player.sendMessage(Text.of(TextColors.RED, "Unable to send mail: Unknown Error!"));
+                            }
+
+                        } else { //The player is not holding a mail item in their hand, open their mail inventory instead
+                            mailboxInventoryManager.getInventory(player.getUniqueId()).ifPresent(mailboxInventory -> {
+                                mailboxInventory.setUnread(false);
+                                player.openInventory(mailboxInventory.getMailInventory(),
+                                        Cause.of(NamedCause.source(instance)));
+                            });
                         }
-
-                        //Send message to the sender based on the result of the inventory transaciton
-                        if (result.getType() == InventoryTransactionResult.Type.SUCCESS) {
-                            player.setItemInHand(event.getHandType(), null);
-                            player.sendMessage(Text.of(TextColors.GOLD, "Mail Sent!"));
-
-                            //If the receiver is online, send them a message they they got mail
-                            Sponge.getServer().getPlayer(receiver).ifPresent(p -> p.sendMessage(Text.of(TextColors.GOLD, "You have mail from ",
-                                    TextColors.WHITE, player.getName())));
-                        } else if (result.getType() == InventoryTransactionResult.Type.FAILURE) {
-                            player.sendMessage(Text.of(TextColors.RED, "Unable to send mail: Receiver Mailbox Full!"));
-                        } else {
-                            player.sendMessage(Text.of(TextColors.RED, "Unable to send mail: Unknown Error!"));
-                        }
-
-                    } else { //The player is not holding a mail item in their hand, open their mail inventory instead
-                        mailboxInventoryManager.getInventory(player.getUniqueId()).ifPresent(mailboxInventory -> {
-                            mailboxInventory.setUnread(false);
-                            player.openInventory(mailboxInventory.getMailInventory(),
-                                    Cause.of(NamedCause.source(instance)));
-                        });
+                    } else {
+                        player.sendMessage(Text.of(TextColors.RED, "You don't have permission to use mailboxes!"));
                     }
                     event.setCancelled(true);
                 }
