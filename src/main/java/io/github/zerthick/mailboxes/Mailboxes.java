@@ -196,7 +196,7 @@ public class Mailboxes {
                     if (event instanceof ChangeBlockEvent.Break) {
                         if (event.getCause().root() instanceof Player) {
                             Player player = (Player) event.getCause().root();
-                            if (player.hasPermission("mailboxes.create")) {
+                            if (player.hasPermission("mailboxes.destroy")) {
                                 blockSnapshotTransaction.getOriginal().getLocation().ifPresent(location -> mailboxLocationManager.removeLocation(location.getExtent().getUniqueId(), location.getBlockPosition()));
                                 player.sendMessage(Text.of(TextColors.RED, "Mailbox Destroyed!"));
                             } else {
@@ -210,7 +210,7 @@ public class Mailboxes {
                     }
                 });
     }
-    
+
     @Listener
     public void onBlockInteract(InteractBlockEvent.Secondary event, @Root Player player, @Getter("getTargetBlock") BlockSnapshot blockSnapshot) {
 
