@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2017  Zerthick
  *
- * This file is part of MailBoxes.
+ * This file is part of Mailboxes.
  *
- * MailBoxes is free software: you can redistribute it and/or modify
+ * Mailboxes is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * MailBoxes is distributed in the hope that it will be useful,
+ * Mailboxes is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MailBoxes.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Mailboxes.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package io.github.zerthick.mailboxes;
@@ -29,12 +29,14 @@ import io.github.zerthick.mailboxes.mailbox.data.mailitem.MailItemKeys;
 import io.github.zerthick.mailboxes.mailbox.data.mailitem.immutable.ImmutableMailItemData;
 import io.github.zerthick.mailboxes.mailbox.data.mailitem.mutable.MailItemData;
 import io.github.zerthick.mailboxes.util.DateFormatter;
+import io.github.zerthick.mailboxes.util.config.ConfigData;
 import io.github.zerthick.mailboxes.util.config.ConfigManager;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.block.tileentity.Sign;
+import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.manipulator.mutable.tileentity.SignData;
 import org.spongepowered.api.data.value.mutable.ListValue;
@@ -52,16 +54,21 @@ import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppedServerEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
+import org.spongepowered.api.event.service.ChangeServiceProviderEvent;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.transaction.InventoryTransactionResult;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
+import org.spongepowered.api.service.economy.EconomyService;
+import org.spongepowered.api.service.economy.account.Account;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
+import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -69,7 +76,7 @@ import java.util.concurrent.ExecutionException;
 @Plugin(
         id = "mailboxes",
         name = "Mailboxes",
-        version = "0.2.0",
+        version = "0.3.0",
         description = "A Simple Minecraft Mailboxes Plugin",
         authors = {
                 "Zerthick"
@@ -83,8 +90,14 @@ public class Mailboxes {
     @Inject
     private PluginContainer instance;
 
+    @Inject
+    @DefaultConfig(sharedRoot = false)
+    private Path defaultConfigPath;
+
     private MailboxLocationManager mailboxLocationManager;
     private MailboxInventoryManager mailboxInventoryManager;
+    private EconomyService economyService;
+    private ConfigData configData;
 
     public Logger getLogger() {
         return logger;
@@ -92,6 +105,10 @@ public class Mailboxes {
 
     public PluginContainer getInstance() {
         return instance;
+    }
+
+    public Path getDefaultConfigPath() {
+        return defaultConfigPath;
     }
 
     @Listener
@@ -108,6 +125,9 @@ public class Mailboxes {
 
         mailboxLocationManager = ConfigManager.loadMailboxLocationManager(this);
         mailboxInventoryManager = new MailboxInventoryManager(new HashMap<>());
+
+        //Load config data
+        configData = ConfigManager.loadConfigData(this);
     }
 
     @Listener
@@ -226,6 +246,16 @@ public class Mailboxes {
                         //If the player is holding a mail item in their hand
                         if (itemStackOptional.isPresent() && isMailItem(itemStackOptional.get())) {
 
+                            //Economy check
+                            if (economyService != null && configData.getPackagePrice() > 0 && !player.hasPermission("mailboxes.price.bypass.package")) {
+                                Account playerAccount = economyService.getOrCreateAccount(player.getIdentifier()).get();
+                                if (playerAccount.getBalance(economyService.getDefaultCurrency()).compareTo(BigDecimal.valueOf(configData.getPackagePrice())) < 0) {
+                                    player.sendMessage(Text.of(TextColors.RED, "You don't have enough funds!"));
+                                    event.setCancelled(true);
+                                    return;
+                                }
+                            }
+
                             ItemStack itemStack = buildSentMailItemStack(itemStackOptional.get());
                             UUID receiver = itemStack.get(MailItemKeys.MAIL_ITEM_RECEIVER).get();
 
@@ -245,8 +275,17 @@ public class Mailboxes {
                                 }
                             }
 
-                            //Send message to the sender based on the result of the inventory transaciton
+                            //Send message to the sender based on the result of the inventory transaction
                             if (result.getType() == InventoryTransactionResult.Type.SUCCESS) {
+
+                                //Remove player funds if needed
+                                if (economyService != null && configData.getPackagePrice() > 0 && !player.hasPermission("mailboxes.price.bypass.package")) {
+                                    Account playerAccount = economyService.getOrCreateAccount(player.getIdentifier()).get();
+                                    playerAccount.withdraw(economyService.getDefaultCurrency(),
+                                            BigDecimal.valueOf(configData.getPackagePrice()),
+                                            Cause.of(NamedCause.source(getInstance())));
+                                }
+
                                 player.setItemInHand(event.getHandType(), null);
                                 player.sendMessage(Text.of(TextColors.GOLD, "Mail Sent!"));
 
@@ -288,6 +327,14 @@ public class Mailboxes {
                     });
                 }
             });
+        }
+    }
+
+    @Listener
+    public void onChangeServiceProvider(ChangeServiceProviderEvent event) {
+        //Hook into economy service
+        if (event.getService().equals(EconomyService.class)) {
+            economyService = (EconomyService) event.getNewProviderRegistration().getProvider();
         }
     }
 

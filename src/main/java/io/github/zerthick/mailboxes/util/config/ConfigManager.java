@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2017  Zerthick
  *
- * This file is part of MailBoxes.
+ * This file is part of Mailboxes.
  *
- * MailBoxes is free software: you can redistribute it and/or modify
+ * Mailboxes is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * MailBoxes is distributed in the hope that it will be useful,
+ * Mailboxes is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MailBoxes.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Mailboxes.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package io.github.zerthick.mailboxes.util.config;
@@ -27,9 +27,14 @@ import io.github.zerthick.mailboxes.location.MailboxLocationManager;
 import io.github.zerthick.mailboxes.util.DataSerializer;
 import io.github.zerthick.mailboxes.util.SQLUtil;
 import io.github.zerthick.mailboxes.util.config.serializers.MailboxInventorySerializer;
+import ninja.leaping.configurate.commented.CommentedConfigurationNode;
+import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
+import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
+import org.spongepowered.api.asset.Asset;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -156,4 +161,33 @@ public class ConfigManager {
         }
     }
 
+    public static ConfigData loadConfigData(Mailboxes plugin) {
+
+        Path path = plugin.getDefaultConfigPath();
+
+        ConfigurationLoader<CommentedConfigurationNode> configLoader = HoconConfigurationLoader.builder().setPath(path).build();
+
+        //Generate default config if it doesn't exist
+        if (!path.toFile().exists()) {
+            Asset defaultConfigAsset = plugin.getInstance().getAsset("DefaultConfig.conf").get();
+            plugin.getLogger().info("Generating default config...");
+            try {
+                defaultConfigAsset.copyToFile(path);
+                configLoader.save(configLoader.load());
+            } catch (IOException e) {
+                plugin.getLogger().error("Error loading default config! Error: " + e.getMessage());
+            }
+        }
+
+        try {
+            CommentedConfigurationNode priceNode = configLoader.load().getNode("prices");
+
+            final double packagePrice = priceNode.getNode("package").getDouble(0);
+            return new ConfigData(packagePrice);
+
+        } catch (IOException e) {
+            plugin.getLogger().error("Error loading config! Error: " + e.getMessage());
+        }
+        return new ConfigData(0);
+    }
 }
