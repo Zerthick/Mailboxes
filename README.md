@@ -6,18 +6,21 @@ Mailboxes allows players to send mail to each other at player-created mailboxes.
 
 *Note:* Once a mailbox has been created the sign is optional, feel free to destroy it!
 
+## Economy Support
+As of Mailboxes v0.3.0, if an economy plugin is installed you may set a cost to sending items in the mail. The prices are set in the `mailboxes.conf` located in `./config/mailboxes`.  The default price is $100, to not charge players any fee set the price to $0.  Players can also have the appropriate `mailboxes.price.bypass` permission to not be charged.
+
 ## Commands
 `/mb` - Displays version information about the Mailboxes Plugin. (Aliases: mb, mailboxes, mail)  
 `/mb send` - Prepares the item held in your main hand to send as various types of items in the mail. (Aliases: send, wrap)  
 `/mb send package <User> [Note]` - Wraps the item currently held in your main hand into a package addressed to `User` with an optional `Note` attached (Notes support format codes!). (Aliases: package)
 
 ## Permissions
-`mailboxes.use`
+`mailboxes.use`  
 `mailboxes.create`  
 `mailboxes.destroy`  
 `mailboxes.command.info`  
-`mailboxes.command.send.package`
+`mailboxes.command.send.package`  
+`mailboxes.price.bypass.package`
 
 ## Planned Features
 * Send different types of mail, packages, letters, notes
-* Economy integration, add cost to sending items in the mail 
