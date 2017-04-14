@@ -21,6 +21,8 @@ package io.github.zerthick.mailboxes.util.config;
 
 import com.flowpowered.math.vector.Vector3i;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import io.github.zerthick.mailboxes.Mailboxes;
 import io.github.zerthick.mailboxes.inventory.MailboxInventory;
 import io.github.zerthick.mailboxes.location.MailboxLocationManager;
@@ -181,13 +183,14 @@ public class ConfigManager {
 
         try {
             CommentedConfigurationNode priceNode = configLoader.load().getNode("prices");
-
+            CommentedConfigurationNode boxItemListNode = configLoader.load().getNode("mailboxBlocks");
             final double packagePrice = priceNode.getNode("package").getDouble(0);
-            return new ConfigData(packagePrice);
+            final Collection<String> mailBoxBlocks = new HashSet<>(boxItemListNode.getList(TypeToken.of(String.class)));
+            return new ConfigData(packagePrice, mailBoxBlocks);
 
-        } catch (IOException e) {
+        } catch (IOException | ObjectMappingException e) {
             plugin.getLogger().error("Error loading config! Error: " + e.getMessage());
         }
-        return new ConfigData(0);
+        return new ConfigData(0, ImmutableSet.of("minecraft:chest"));
     }
 }

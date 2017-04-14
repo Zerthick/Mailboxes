@@ -19,15 +19,23 @@
 
 package io.github.zerthick.mailboxes.util.config;
 
+import java.util.Collection;
+
 public class ConfigData {
 
     private final double packagePrice;
+    private final Collection<String> mailBoxBlocks;
 
-    public ConfigData(double packagePrice) {
+    public ConfigData(double packagePrice, Collection<String> mailBoxItemIDs) {
         this.packagePrice = packagePrice;
+        this.mailBoxBlocks = mailBoxItemIDs;
     }
 
     public double getPackagePrice() {
         return packagePrice;
+    }
+
+    public Collection<String> getMailBoxBlocks() {
+        return mailBoxBlocks;
     }
 }

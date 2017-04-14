@@ -34,7 +34,7 @@ import io.github.zerthick.mailboxes.util.config.ConfigManager;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
-import org.spongepowered.api.block.BlockTypes;
+import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.tileentity.Sign;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.data.key.Keys;
@@ -76,7 +76,7 @@ import java.util.concurrent.ExecutionException;
 @Plugin(
         id = "mailboxes",
         name = "Mailboxes",
-        version = "0.3.0",
+        version = "0.4.0",
         description = "A Simple Minecraft Mailboxes Plugin",
         authors = {
                 "Zerthick"
@@ -182,8 +182,8 @@ public class Mailboxes {
             sign.getBlock().get(Keys.DIRECTION).ifPresent(direction -> {
                 Location<World> potentialChestLocation = signLocation.getBlockRelative(direction.getOpposite());
 
-                //If the sign is attached to a chest
-                if (potentialChestLocation.getBlock().getType() == BlockTypes.CHEST) {
+                //If the sign is attached to a mailbox block
+                if (isMailboxBlock(potentialChestLocation.getBlock().getType())) {
 
                     if (player.hasPermission("mailboxes.create")) {
 
@@ -207,7 +207,7 @@ public class Mailboxes {
 
         //Filter out transactions that are not chests and are not mailbox locations
         event.getTransactions().stream()
-                .filter(blockSnapshotTransaction -> blockSnapshotTransaction.getOriginal().getState().getType() == BlockTypes.CHEST)
+                .filter(blockSnapshotTransaction -> isMailboxBlock(blockSnapshotTransaction.getOriginal().getState().getType()))
                 .filter(blockSnapshotTransaction -> {
                     Optional<Location<World>> originalLocation = blockSnapshotTransaction.getOriginal().getLocation();
                     return originalLocation.map(worldLocation -> mailboxLocationManager.isLocation(worldLocation.getExtent().getUniqueId(), worldLocation.getBlockPosition())).orElse(false);
@@ -234,7 +234,7 @@ public class Mailboxes {
     @Listener
     public void onBlockInteract(InteractBlockEvent.Secondary event, @Root Player player, @Getter("getTargetBlock") BlockSnapshot blockSnapshot) {
 
-        if (blockSnapshot.getState().getType() == BlockTypes.CHEST) {
+        if (isMailboxBlock(blockSnapshot.getState().getType())) {
             blockSnapshot.getLocation().ifPresent(location -> {
                 if (mailboxLocationManager.isLocation(location.getExtent().getUniqueId(), location.getBlockPosition())) {
 
@@ -368,5 +368,13 @@ public class Mailboxes {
         itemStack.offer(Keys.ITEM_LORE, lore);
 
         return itemStack;
+    }
+
+    private boolean isMailboxBlock(BlockType blockType) {
+        return isMailboxBlock(blockType.getId());
+    }
+
+    private boolean isMailboxBlock(String id) {
+        return configData.getMailBoxBlocks().contains(id);
     }
 }
