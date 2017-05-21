@@ -76,7 +76,7 @@ import java.util.concurrent.ExecutionException;
 @Plugin(
         id = "mailboxes",
         name = "Mailboxes",
-        version = "0.4.0",
+        version = "0.5.0",
         description = "A Simple Minecraft Mailboxes Plugin",
         authors = {
                 "Zerthick"
@@ -115,7 +115,7 @@ public class Mailboxes {
     public void onServerInit(GameInitializationEvent event) {
 
         //Register Data Manipulators
-        MailboxData.registerData();
+        MailboxData.registerData(getInstance());
 
         //Register Serializers
         ConfigManager.registerSerializers();
