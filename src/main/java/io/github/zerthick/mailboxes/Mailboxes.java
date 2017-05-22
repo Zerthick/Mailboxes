@@ -52,11 +52,9 @@ import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppedServerEvent;
-import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.event.service.ChangeServiceProviderEvent;
-import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.transaction.InventoryTransactionResult;
@@ -338,13 +336,6 @@ public class Mailboxes {
                     });
                 }
             });
-        }
-    }
-
-    @Listener
-    public void onInventoryTransfer(ChangeInventoryEvent.Transfer event, @Root Player player, @Getter("getTargetInventory") Inventory inventory) {
-        if (inventory.getName().get().equals("Mail")) {
-            event.getTransactions().forEach(slotTransaction -> slotTransaction.setValid(slotTransaction.getFinal().equals(ItemStackSnapshot.NONE)));
         }
     }
 
