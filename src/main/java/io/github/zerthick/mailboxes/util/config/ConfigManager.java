@@ -20,15 +20,14 @@
 package io.github.zerthick.mailboxes.util.config;
 
 import com.flowpowered.math.vector.Vector3i;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import io.github.zerthick.mailboxes.Mailboxes;
 import io.github.zerthick.mailboxes.inventory.MailboxInventory;
+import io.github.zerthick.mailboxes.inventory.MailboxInventoryManager;
 import io.github.zerthick.mailboxes.location.MailboxLocationManager;
-import io.github.zerthick.mailboxes.util.DataSerializer;
-import io.github.zerthick.mailboxes.util.SQLUtil;
 import io.github.zerthick.mailboxes.util.config.serializers.MailboxInventorySerializer;
+import io.github.zerthick.mailboxes.util.config.sql.SQLDataUtil;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
@@ -37,8 +36,9 @@ import org.spongepowered.api.asset.Asset;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.sql.SQLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.UUID;
 
 public class ConfigManager {
 
@@ -46,121 +46,37 @@ public class ConfigManager {
         MailboxInventorySerializer.register();
     }
 
+    public static void createTables(Mailboxes plugin) {
+        SQLDataUtil.createMailboxLocationsTable(plugin.getLogger());
+        SQLDataUtil.createMailboxInventoriesTable(plugin.getLogger());
+    }
+
     public static MailboxLocationManager loadMailboxLocationManager(Mailboxes plugin) {
 
-        final String TABLE_NAME = "MAILBOX_LOCATIONS";
-        final String PRIMARY_KEY = "WORLD_ID";
-        final String DATA_KEY = "DATA";
-        final List<String> COLUMNS = ImmutableList.of(PRIMARY_KEY + " UUID PRIMARY KEY", DATA_KEY + " VARCHAR");
-
-        Map<UUID, Set<Vector3i>> uuidSetMap = new HashMap<>();
-
-        try {
-
-            SQLUtil.createTable(TABLE_NAME, COLUMNS);
-            SQLUtil.select(TABLE_NAME, resultSet -> {
-                try {
-                    while (resultSet.next()) {
-                        uuidSetMap.put((UUID) resultSet.getObject(PRIMARY_KEY),
-                                DataSerializer.deserializeMailboxLocationManagerList(resultSet.getString(DATA_KEY)));
-                    }
-                } catch (SQLException | ObjectMappingException | IOException e) {
-                    plugin.getLogger().error("Error loading Mailbox locations! Error: " + e.getMessage());
-                }
-            });
-
-        } catch (SQLException e) {
-            plugin.getLogger().error("Error loading Mailbox locations! Error: " + e.getMessage());
-        }
-
-        return new MailboxLocationManager(uuidSetMap);
+        return new MailboxLocationManager(SQLDataUtil.loadMailboxLocations(plugin.getLogger()));
     }
 
     public static void saveMailboxLocationManager(MailboxLocationManager locationManager, Mailboxes plugin) {
+        SQLDataUtil.saveMailboxLocations(locationManager.getLocations(), plugin.getLogger());
+    }
 
-        final String TABLE_NAME = "MAILBOX_LOCATIONS";
-        final String PRIMARY_KEY = "WORLD_ID";
+    public static void deleteMailboxLocation(UUID worldID, Vector3i location) {
 
-        try {
-
-            Map<String, List<String>> serializedLocationManager = new HashMap<>();
-            for (Map.Entry<UUID, Set<Vector3i>> entry : locationManager.getLocations().entrySet()) {
-                String serializedLocationList = DataSerializer.serializeMailboxLocationManagerList(entry.getValue());
-                serializedLocationManager.put(entry.getKey().toString(), ImmutableList.of(serializedLocationList));
-            }
-
-            if (!serializedLocationManager.isEmpty()) {
-                SQLUtil.mergeMap(TABLE_NAME, PRIMARY_KEY, serializedLocationManager);
-            }
-
-        } catch (SQLException | IOException | ObjectMappingException e) {
-            plugin.getLogger().error("Error saving Mailbox locations! Error: " + e.getMessage());
-        }
     }
 
     public static MailboxInventory loadMailboxInventory(UUID playerUUID, Mailboxes plugin) {
 
-        final String TABLE_NAME = "MAILBOX_INVENTORIES";
-        final String PRIMARY_KEY = "PLAYER_ID";
-        final String DATA_KEY = "DATA";
-        final List<String> COLUMNS = ImmutableList.of(PRIMARY_KEY + " UUID PRIMARY KEY", DATA_KEY + " VARCHAR");
-
-        MailboxInventory[] mailboxInventory = new MailboxInventory[1];
-        mailboxInventory[0] = MailboxInventory.create(plugin.getInstance());
-
-        try {
-
-            SQLUtil.createTable(TABLE_NAME, COLUMNS);
-
-            SQLUtil.select(TABLE_NAME, PRIMARY_KEY, playerUUID.toString(), resultSet -> {
-                try {
-                    if (resultSet.next()) {
-                        mailboxInventory[0] = DataSerializer.deserializeMailboxInventory(resultSet.getString(DATA_KEY));
-                    }
-                } catch (SQLException | ObjectMappingException | IOException e) {
-                    plugin.getLogger().error("Error loading player Mailbox! Error: " + e.getMessage());
-                }
-            });
-
-        } catch (SQLException e) {
-            plugin.getLogger().error("Error loading player Mailbox! Error: " + e.getMessage());
-        }
-
-        return mailboxInventory[0];
+        return SQLDataUtil.loadMailboxInventory(playerUUID, plugin.getLogger())
+                .orElse(MailboxInventory.create(plugin.getInstance()));
     }
 
     public static void saveMailboxInventory(UUID playerUUID, MailboxInventory mailboxInventory, Mailboxes plugin) {
-
-        final String TABLE_NAME = "MAILBOX_INVENTORIES";
-        final String PRIMARY_KEY = "PLAYER_ID";
-
-        try {
-            SQLUtil.merge(TABLE_NAME, PRIMARY_KEY, playerUUID.toString(), ImmutableList.of(DataSerializer.serializeMailboxInventory(mailboxInventory)));
-        } catch (SQLException | IOException | ObjectMappingException e) {
-            plugin.getLogger().error("Error saving player Mailbox! Error: " + e.getMessage());
-        }
+        SQLDataUtil.saveMailboxInventory(playerUUID, mailboxInventory, plugin.getLogger());
     }
 
-    public static void saveMailboxInventories(Map<UUID, MailboxInventory> mailboxInventoryMap, Mailboxes plugin) {
+    public static void saveMailboxInventories(MailboxInventoryManager inventoryManager, Mailboxes plugin) {
 
-        final String TABLE_NAME = "MAILBOX_INVENTORIES";
-        final String PRIMARY_KEY = "PLAYER_ID";
-
-        try {
-
-            Map<String, List<String>> serializedMailboxInventoryMap = new HashMap<>();
-            for (Map.Entry<UUID, MailboxInventory> entry : mailboxInventoryMap.entrySet()) {
-                String serializedLocationList = DataSerializer.serializeMailboxInventory(entry.getValue());
-                serializedMailboxInventoryMap.put(entry.getKey().toString(), ImmutableList.of(serializedLocationList));
-            }
-
-            if (!serializedMailboxInventoryMap.isEmpty()) {
-                SQLUtil.mergeMap(TABLE_NAME, PRIMARY_KEY, serializedMailboxInventoryMap);
-            }
-
-        } catch (SQLException | IOException | ObjectMappingException e) {
-            plugin.getLogger().error("Error saving player Mailboxes! Error: " + e.getMessage());
-        }
+        SQLDataUtil.saveMailboxInventories(inventoryManager.getInventoryMap(), plugin.getLogger());
     }
 
     public static ConfigData loadConfigData(Mailboxes plugin) {

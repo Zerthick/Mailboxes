@@ -1,23 +1,23 @@
 /*
  * Copyright (C) 2017  Zerthick
  *
- * This file is part of MailBoxes.
+ * This file is part of Mailboxes.
  *
- * MailBoxes is free software: you can redistribute it and/or modify
+ * Mailboxes is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * MailBoxes is distributed in the hope that it will be useful,
+ * Mailboxes is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MailBoxes.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Mailboxes.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.zerthick.mailboxes.util;
+package io.github.zerthick.mailboxes.util.config.sql;
 
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.service.sql.SqlService;
@@ -28,7 +28,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -38,10 +37,6 @@ public class SQLUtil {
 
     private static DataSource getDataSource() throws SQLException {
         return sql.getDataSource("jdbc:h2:./config/mailboxes/data");
-    }
-
-    private static String prefix(String string) {
-        return '\'' + string + '\'';
     }
 
     public static void createTable(String name, List<String> columns) throws SQLException {
@@ -94,9 +89,9 @@ public class SQLUtil {
 
         PreparedStatement statement = connection.prepareStatement("SELECT * " +
                 " FROM " + tableName.toUpperCase() +
-                " WHERE " + primaryKey + "=" + prefix(primaryKeyValue)
+                " WHERE " + primaryKey + " = ?"
         );
-
+        statement.setString(1, primaryKeyValue);
         resultSet = statement.executeQuery();
 
         consumer.accept(resultSet);
@@ -104,35 +99,40 @@ public class SQLUtil {
         connection.close();
     }
 
-    public static void merge(String tableName, String primaryKey, String primaryKeyValue, List<String> values) throws SQLException {
+    public static void delete(String tableName, String primaryKey, String primaryKeyValue) throws SQLException {
 
         Connection connection = getDataSource().getConnection();
 
-        PreparedStatement statement = connection.prepareStatement("MERGE INTO " + tableName.toUpperCase() +
-                " KEY(" + primaryKey + ")" +
-                "VALUES(" + prefix(primaryKeyValue) + ", " +
-                values.stream().map(SQLUtil::prefix).collect(Collectors.joining(", ")) +
-                ")"
+        PreparedStatement statement = connection.prepareStatement("DELETE " +
+                " FROM " + tableName.toUpperCase() +
+                " WHERE " + primaryKey + " = ?"
         );
-
+        statement.setString(1, primaryKeyValue);
         statement.executeUpdate();
-
         connection.close();
     }
 
-    public static void mergeMap(String tableName, String primaryKey, Map<String, List<String>> primaryKeyValueMap) throws SQLException {
 
+    public static void executeUpdate(String sql) throws SQLException {
+        executeUpdate(sql, preparedStatement -> {
+        });
+    }
+
+    public static void executeUpdate(String sql, Consumer<PreparedStatement> consumer) throws SQLException {
         Connection connection = getDataSource().getConnection();
 
-        PreparedStatement statement = connection.prepareStatement("MERGE INTO " + tableName.toUpperCase() +
-                " KEY(" + primaryKey + ")" +
-                " VALUES(" + primaryKeyValueMap.entrySet().stream()
-                .map(stringListEntry -> prefix(stringListEntry.getKey().toUpperCase()) + ", " + stringListEntry.getValue().stream().map(SQLUtil::prefix).collect(Collectors.joining(", ")))
-                .collect(Collectors.joining("), (")) +
-                ")"
-        );
+        PreparedStatement statement = connection.prepareStatement(sql);
+        consumer.accept(statement);
         statement.executeUpdate();
+        connection.close();
+    }
 
+    public static void executeBatch(String sql, Consumer<PreparedStatement> consumer) throws SQLException {
+        Connection connection = getDataSource().getConnection();
+
+        PreparedStatement statement = connection.prepareStatement(sql);
+        consumer.accept(statement);
+        statement.executeBatch();
         connection.close();
     }
 }

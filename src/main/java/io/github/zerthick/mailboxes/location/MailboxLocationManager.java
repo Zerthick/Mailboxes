@@ -1,25 +1,27 @@
 /*
  * Copyright (C) 2017  Zerthick
  *
- * This file is part of MailBoxes.
+ * This file is part of Mailboxes.
  *
- * MailBoxes is free software: you can redistribute it and/or modify
+ * Mailboxes is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
  * (at your option) any later version.
  *
- * MailBoxes is distributed in the hope that it will be useful,
+ * Mailboxes is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MailBoxes.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Mailboxes.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package io.github.zerthick.mailboxes.location;
 
 import com.flowpowered.math.vector.Vector3i;
+import io.github.zerthick.mailboxes.util.config.ConfigManager;
+import org.spongepowered.api.Sponge;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -42,6 +44,11 @@ public class MailboxLocationManager {
 
     public void removeLocation(UUID worldUUID, Vector3i location) {
         locations.getOrDefault(worldUUID, new HashSet<>()).remove(location);
+
+        //Remove location from database
+        Sponge.getScheduler().createTaskBuilder().async().execute(() -> {
+            ConfigManager.deleteMailboxLocation(worldUUID, location);
+        }).submit(Sponge.getPluginManager().getPlugin("mailboxes").get());
     }
 
     public boolean isLocation(UUID worldUUID, Vector3i location) {

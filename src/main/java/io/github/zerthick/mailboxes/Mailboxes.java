@@ -76,7 +76,7 @@ import java.util.concurrent.ExecutionException;
 @Plugin(
         id = "mailboxes",
         name = "Mailboxes",
-        version = "0.5.0",
+        version = "1.0.0",
         description = "A Simple Minecraft Mailboxes Plugin",
         authors = {
                 "Zerthick"
@@ -119,6 +119,9 @@ public class Mailboxes {
 
         //Register Serializers
         ConfigManager.registerSerializers();
+
+        //Create tables if they don't exist
+        ConfigManager.createTables(this);
 
         //Register Commands
         CommandRegister.registerCommands(this);
@@ -165,7 +168,7 @@ public class Mailboxes {
     public void onServerStop(GameStoppedServerEvent event) {
 
         ConfigManager.saveMailboxLocationManager(mailboxLocationManager, this);
-        ConfigManager.saveMailboxInventories(mailboxInventoryManager.getInventoryMap(), this);
+        ConfigManager.saveMailboxInventories(mailboxInventoryManager, this);
     }
 
     @Listener
