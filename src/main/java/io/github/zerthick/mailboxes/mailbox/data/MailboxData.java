@@ -28,7 +28,7 @@ import org.spongepowered.api.plugin.PluginContainer;
 public class MailboxData {
 
     public static void registerData(PluginContainer container) {
-        DataRegistration.<MailboxData, ImmutableMailItemData>builder()
+        DataRegistration.<MailItemData, ImmutableMailItemData>builder()
                 .dataClass(MailItemData.class)
                 .immutableClass(ImmutableMailItemData.class)
                 .builder(new MailItemDataBuilder())

@@ -52,9 +52,11 @@ import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppedServerEvent;
+import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.event.service.ChangeServiceProviderEvent;
+import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.item.inventory.transaction.InventoryTransactionResult;
@@ -138,12 +140,16 @@ public class Mailboxes {
 
         UUID playerUUID = event.getTargetEntity().getUniqueId();
 
-        MailboxInventory mailboxInventory = ConfigManager.loadMailboxInventory(playerUUID, this);
-        mailboxInventoryManager.addInventory(playerUUID, mailboxInventory);
+        //Load Inventory from Database
+        Sponge.getScheduler().createTaskBuilder().async()
+                .execute(() -> {
+                    MailboxInventory mailboxInventory = ConfigManager.loadMailboxInventory(playerUUID, this);
+                    mailboxInventoryManager.addInventory(playerUUID, mailboxInventory);
 
-        if (mailboxInventory.isUnread()) {
-            event.getTargetEntity().sendMessage(Text.of(TextColors.GOLD, "You have unread mail!"));
-        }
+                    if (mailboxInventory.isUnread()) {
+                        event.getTargetEntity().sendMessage(Text.of(TextColors.GOLD, "You have unread mail!"));
+                    }
+                }).submit(getInstance());
     }
 
     @Listener
@@ -151,8 +157,10 @@ public class Mailboxes {
 
         UUID playerUUID = event.getTargetEntity().getUniqueId();
 
-        mailboxInventoryManager.removeInventory(playerUUID).ifPresent(inventory ->
-                ConfigManager.saveMailboxInventory(playerUUID, inventory, this));
+        //Save Inventory to Database
+        Sponge.getScheduler().createTaskBuilder().async()
+                .execute(() -> mailboxInventoryManager.removeInventory(playerUUID).ifPresent(inventory ->
+                        ConfigManager.saveMailboxInventory(playerUUID, inventory, this))).submit(getInstance());
     }
 
     @Listener
@@ -330,6 +338,13 @@ public class Mailboxes {
                     });
                 }
             });
+        }
+    }
+
+    @Listener
+    public void onInventoryTransfer(ChangeInventoryEvent.Transfer event, @Root Player player, @Getter("getTargetInventory") Inventory inventory) {
+        if (inventory.getName().get().equals("Mail")) {
+            event.getTransactions().forEach(slotTransaction -> slotTransaction.setValid(slotTransaction.getFinal().equals(ItemStackSnapshot.NONE)));
         }
     }
 

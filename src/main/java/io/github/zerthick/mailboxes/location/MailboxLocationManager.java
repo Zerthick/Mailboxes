@@ -20,6 +20,7 @@
 package io.github.zerthick.mailboxes.location;
 
 import com.flowpowered.math.vector.Vector3i;
+import io.github.zerthick.mailboxes.Mailboxes;
 import io.github.zerthick.mailboxes.util.config.ConfigManager;
 import org.spongepowered.api.Sponge;
 
@@ -31,9 +32,11 @@ import java.util.UUID;
 public class MailboxLocationManager {
 
     private Map<UUID, Set<Vector3i>> locations;
+    private Mailboxes plugin;
 
-    public MailboxLocationManager(Map<UUID, Set<Vector3i>> locations) {
+    public MailboxLocationManager(Map<UUID, Set<Vector3i>> locations, Mailboxes plugin) {
         this.locations = locations;
+        this.plugin = plugin;
     }
 
     public void addLocation(UUID worldUUID, Vector3i location) {
@@ -47,8 +50,8 @@ public class MailboxLocationManager {
 
         //Remove location from database
         Sponge.getScheduler().createTaskBuilder().async().execute(() -> {
-            ConfigManager.deleteMailboxLocation(worldUUID, location);
-        }).submit(Sponge.getPluginManager().getPlugin("mailboxes").get());
+            ConfigManager.deleteMailboxLocation(worldUUID, location, plugin);
+        }).submit(plugin.getInstance());
     }
 
     public boolean isLocation(UUID worldUUID, Vector3i location) {

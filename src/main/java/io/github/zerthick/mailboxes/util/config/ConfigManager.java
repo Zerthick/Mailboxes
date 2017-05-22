@@ -53,15 +53,15 @@ public class ConfigManager {
 
     public static MailboxLocationManager loadMailboxLocationManager(Mailboxes plugin) {
 
-        return new MailboxLocationManager(SQLDataUtil.loadMailboxLocations(plugin.getLogger()));
+        return new MailboxLocationManager(SQLDataUtil.loadMailboxLocations(plugin.getLogger()), plugin);
     }
 
     public static void saveMailboxLocationManager(MailboxLocationManager locationManager, Mailboxes plugin) {
         SQLDataUtil.saveMailboxLocations(locationManager.getLocations(), plugin.getLogger());
     }
 
-    public static void deleteMailboxLocation(UUID worldID, Vector3i location) {
-
+    public static void deleteMailboxLocation(UUID worldID, Vector3i location, Mailboxes plugin) {
+        SQLDataUtil.deleteMailboxLocation(worldID, location, plugin.getLogger());
     }
 
     public static MailboxInventory loadMailboxInventory(UUID playerUUID, Mailboxes plugin) {
