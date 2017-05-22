@@ -139,7 +139,7 @@ public class SQLDataUtil {
     public static void saveMailboxInventory(UUID playerID, MailboxInventory mailboxInventory, Logger logger) {
 
         try {
-            SQLUtil.executeUpdate("MEREGE INTO MAILBOX_INVENTORIES VALUES (?, ?)", preparedStatement -> {
+            SQLUtil.executeUpdate("MERGE INTO MAILBOX_INVENTORIES VALUES (?, ?)", preparedStatement -> {
                 try {
                     preparedStatement.setObject(1, playerID);
                     preparedStatement.setString(2, DataSerializer.serializeMailboxInventory(mailboxInventory));
