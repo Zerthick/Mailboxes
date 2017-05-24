@@ -34,7 +34,7 @@ public class SQLDataUtil {
 
     public static void createMailboxLocationsTable(Logger logger) {
 
-        List<String> columns = ImmutableList.of("WORLD_ID UUID PRIMARY KEY", "LOCATION VARCHAR");
+        List<String> columns = ImmutableList.of("WORLD_ID UUID", "LOCATION VARCHAR", "PRIMARY KEY (WORLD_ID, LOCATION)");
 
         try {
             SQLUtil.createTable("MAILBOX_LOCATIONS", columns);
