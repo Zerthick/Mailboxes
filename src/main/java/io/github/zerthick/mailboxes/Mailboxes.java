@@ -36,6 +36,7 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.tileentity.Sign;
+import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.manipulator.mutable.tileentity.SignData;
@@ -94,6 +95,10 @@ public class Mailboxes {
     @DefaultConfig(sharedRoot = false)
     private Path defaultConfigPath;
 
+    @Inject
+    @ConfigDir(sharedRoot = false)
+    private Path defaultConfigDir;
+
     private MailboxLocationManager mailboxLocationManager;
     private MailboxInventoryManager mailboxInventoryManager;
     private EconomyService economyService;
@@ -109,6 +114,10 @@ public class Mailboxes {
 
     public Path getDefaultConfigPath() {
         return defaultConfigPath;
+    }
+
+    public Path getDefaultConfigDir() {
+        return defaultConfigDir;
     }
 
     @Listener

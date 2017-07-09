@@ -19,6 +19,7 @@
 
 package io.github.zerthick.mailboxes.util.config.sql;
 
+import io.github.zerthick.mailboxes.Mailboxes;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.service.sql.SqlService;
 
@@ -36,7 +37,9 @@ public class SQLUtil {
     private static SqlService sql = Sponge.getServiceManager().provide(SqlService.class).get();
 
     private static DataSource getDataSource() throws SQLException {
-        return sql.getDataSource("jdbc:h2:./config/mailboxes/data");
+        Mailboxes plugin = (Mailboxes) Sponge.getPluginManager().getPlugin("mailboxes").get().getInstance().get();
+        String configDir = plugin.getDefaultConfigDir().toString();
+        return sql.getDataSource("jdbc:h2:" + configDir + "/data");
     }
 
     public static void createTable(String name, List<String> columns) throws SQLException {
