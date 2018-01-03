@@ -19,6 +19,7 @@
 
 package io.github.zerthick.mailboxes.mailbox.data;
 
+import io.github.zerthick.mailboxes.mailbox.data.mailitem.MailItemKeys;
 import io.github.zerthick.mailboxes.mailbox.data.mailitem.builder.MailItemDataBuilder;
 import io.github.zerthick.mailboxes.mailbox.data.mailitem.immutable.ImmutableMailItemData;
 import io.github.zerthick.mailboxes.mailbox.data.mailitem.mutable.MailItemData;
@@ -28,6 +29,9 @@ import org.spongepowered.api.plugin.PluginContainer;
 public class MailboxData {
 
     public static void registerData(PluginContainer container) {
+
+        MailItemKeys.init();
+
         DataRegistration.<MailItemData, ImmutableMailItemData>builder()
                 .dataClass(MailItemData.class)
                 .immutableClass(ImmutableMailItemData.class)
