@@ -46,8 +46,6 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
@@ -77,7 +75,6 @@ import java.util.concurrent.ExecutionException;
 @Plugin(
         id = "mailboxes",
         name = "Mailboxes",
-        version = "1.0.0",
         description = "A Simple Minecraft Mailboxes Plugin",
         authors = {
                 "Zerthick"
@@ -299,9 +296,14 @@ public class Mailboxes {
                                 //Remove player funds if needed
                                 if (economyService != null && configData.getPackagePrice() > 0 && !player.hasPermission("mailboxes.price.bypass.package")) {
                                     Account playerAccount = economyService.getOrCreateAccount(player.getIdentifier()).get();
+
+                                    Sponge.getCauseStackManager().pushCause(getInstance());
+
                                     playerAccount.withdraw(economyService.getDefaultCurrency(),
                                             BigDecimal.valueOf(configData.getPackagePrice()),
-                                            Cause.of(NamedCause.source(getInstance())));
+                                            Sponge.getCauseStackManager().getCurrentCause());
+
+                                    Sponge.getCauseStackManager().popCause();
                                 }
 
                                 player.setItemInHand(event.getHandType(), null);
@@ -319,8 +321,7 @@ public class Mailboxes {
                         } else { //The player is not holding a mail item in their hand, open their mail inventory instead
                             mailboxInventoryManager.getInventory(player.getUniqueId()).ifPresent(mailboxInventory -> {
                                 mailboxInventory.setUnread(false);
-                                player.openInventory(mailboxInventory.getMailInventory(),
-                                        Cause.of(NamedCause.source(instance)));
+                                player.openInventory(mailboxInventory.getMailInventory());
                             });
                         }
                     } else {
